@@ -39,7 +39,7 @@ cat("\nContingency table: silhouette-selected clusters vs species\n")
 print(table(Cluster = km_max$cluster, Species = y))
 
 ari <- adjustedRandIndex(km_max$cluster, y)
-cat("\nAdjusted Rand index, silhouette-selected solution:", ari_selected, "\n")
+cat("\nAdjusted Rand index, silhouette-selected solution:", ari, "\n")
 
 ## Part 3
 pca <- prcomp(X)
@@ -69,16 +69,16 @@ derived_raw <- data.frame(
 
 derived <- scale(derived_raw)
 
-silhouette_derived <- numeric(length(k_values))
-for (j in seq_along(k_values)) {
-  k <- k_values[j]
+silhouette_derived <- numeric(length(k_vals))
+for (j in seq_along(k_vals)) {
+  k <- k_vals[j]
   km <- kmeans(derived, centers = k, nstart = 50)
   sil <- silhouette(km$cluster, dist(derived))
   silhouette_derived[j] <- mean(sil[, "sil_width"])
 }
 
 derived_results <- data.frame(
-  k = k_values,
+  k = k_vals,
   average_silhouette = silhouette_derived
 )
 
@@ -99,7 +99,7 @@ tsne_results <- vector("list", length(perplexities))
 for (j in seq_along(perplexities)) {
   set.seed(100 + perplexities[j])
   tsne_results[[j]] <- Rtsne(
-    X_scaled,
+    X,
     dims = 2,
     perplexity = perplexities[j],
     theta = 0.5,
