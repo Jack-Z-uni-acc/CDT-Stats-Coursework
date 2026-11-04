@@ -48,6 +48,7 @@ pca_scores <- as.data.frame(pca$x)
 
 cluster_colours <- c('red', 'blue')
 
+pdf('PCA.pdf')
 plot(
   pca_scores$PC1,
   pca_scores$PC2,
@@ -56,6 +57,7 @@ plot(
   ylab = paste0("PC2 (", round(percent_variance[2], 1), "%)"),
   main = "PCA with K-means cluster labels (k = 2)"
 )
+dev.off()
 
 ## Part 4
 derived_raw <- data.frame(
@@ -111,6 +113,7 @@ for (j in seq_along(perplexities)) {
 }
 
 par(mfrow = c(2, 2))
+pdf('tsne.pdf')
 for (j in seq_along(perplexities)) {
   tsne_xy <- tsne_results[[j]]$Y
   plot(
@@ -122,4 +125,5 @@ for (j in seq_along(perplexities)) {
     main = paste("t-SNE, perplexity =", perplexities[j])
   )
 }
+dev.off()
 par(mfrow = c(1, 1))
