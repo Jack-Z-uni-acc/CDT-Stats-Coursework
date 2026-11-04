@@ -1,5 +1,3 @@
-#   7. Produces diagnostic plots and a comparison table
-
 library(faraway)
 library(pls)
 
