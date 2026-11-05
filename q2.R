@@ -33,29 +33,36 @@ k_max <- silhouette_results$k[
 
 set.seed(123)
 km_max <- kmeans(X, centers = k_max, nstart = 100)
+km3 <- kmeans(X, centers = 3, nstart = 50)
 
 ## Part 2
 cat("\nContingency table: silhouette-selected clusters vs species\n")
 print(table(Cluster = km_max$cluster, Species = y))
 
+cat("\nContingency table: k=3 clusters vs species\n")
+print(table(Cluster = km3$cluster, Species = y))
+
 ari <- adjustedRandIndex(km_max$cluster, y)
 cat("\nAdjusted Rand index, silhouette-selected solution:", ari, "\n")
+
+ari3 <- adjustedRandIndex(km3$cluster, y)
+cat("\nAdjusted Rand index, k=3 solution:", ari3, "\n")
 
 ## Part 3
 pca <- prcomp(X)
 percent_variance <- 100 * pca$sdev^2 / sum(pca$sdev^2)
 pca_scores <- as.data.frame(pca$x)
 
-cluster_colours <- c('red', 'blue')
+cluster_colours <- c('red', 'blue','green')
 
 pdf('PCA.pdf')
 plot(
   pca_scores$PC1,
   pca_scores$PC2,
-  col = cluster_colours[km_max$cluster],
+  col = cluster_colours[km3$cluster],
   xlab = paste0("PC1 (", round(percent_variance[1], 1), "%)"),
   ylab = paste0("PC2 (", round(percent_variance[2], 1), "%)"),
-  main = "PCA with K-means cluster labels (k = 2)"
+  main = "PCA with K-means cluster labels (k = 3)"
 )
 dev.off()
 
@@ -87,12 +94,13 @@ derived_results <- data.frame(
 k_derived <- derived_results$k[which.max(derived_results$average_silhouette)]
 set.seed(123)
 km_derived <- kmeans(derived, centers = k_derived, nstart = 100)
+km3_derived <- kmeans(derived, centers = 3, nstart = 100)
 
 cat("\nContingency table: derived-variable clusters vs species\n")
-print(table(Cluster = km_derived$cluster, Species = y))
+print(table(Cluster = km3_derived$cluster, Species = y))
 
 cat("Adjusted Rand index for derived-variable clustering:",
-    adjustedRandIndex(km_derived$cluster, y), "\n")
+    adjustedRandIndex(km3_derived$cluster, y), "\n")
 
 ## Part 5
 perplexities <- c(5, 15, 30, 45)
@@ -114,12 +122,12 @@ for (j in seq_along(perplexities)) {
 
 par(mfrow = c(2, 2))
 pdf('tsne.pdf')
+
 for (j in seq_along(perplexities)) {
   tsne_xy <- tsne_results[[j]]$Y
   plot(
     tsne_xy,
     col = c('red', 'blue', 'green')[y],
-    pch = 19,
     xlab = "t-SNE dimension 1",
     ylab = "t-SNE dimension 2",
     main = paste("t-SNE, perplexity =", perplexities[j])
