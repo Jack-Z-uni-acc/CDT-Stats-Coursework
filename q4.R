@@ -7,7 +7,7 @@ library(tibble)
 
 set.seed(2026)
 
-# 2. Simulation settings
+#### 1.a Generate the data matrix
 n <- 200
 p <- 400
 n_replicates <- 100
@@ -17,16 +17,18 @@ noise_sd <- 1
 correlation_values <- c(0, 0.25, 0.50, 0.75, 0.90)
 block_size <- 10
 
-# The first 10 predictors are truly associated with the response.
 true_variables <- 1:n_true
 true_beta <- c(2.0, 1.75, 1.5, 1.25, 1.0,
                -2.0, -1.75, -1.5, -1.25, -1.0)
 
-# 3. Generate correlated predictors
+# Function to generate X, the data matrix
 generate_X <- function(n, p, rho, block_size = 10) {
+  # Initialise X with zeros
   X <- matrix(0, nrow = n, ncol = p)
+  # Divide into blocks for within block correlation strength rho
   n_blocks <- ceiling(p / block_size)
-
+  # Buid X by generating standard normal distributed blocks Z and
+  # applying the correlation matrix sigma for within block correlation
   for (block in seq_len(n_blocks)) {
     start <- (block - 1) * block_size + 1
     end <- min(block * block_size, p)
@@ -35,29 +37,29 @@ generate_X <- function(n, p, rho, block_size = 10) {
     Sigma <- matrix(rho, nrow = block_p, ncol = block_p)
     diag(Sigma) <- 1
 
-    # Independent standard-normal latent variables are transformed using
-    # the Cholesky factor to obtain the desired within-block correlation.
     Z <- matrix(rnorm(n * block_p), nrow = n, ncol = block_p)
     L <- chol(Sigma)
     X[, start:end] <- Z %*% L
   }
-
+  # Normalise the generated data
   scale(X)
 }
 
-# 4. Fit one lasso model
+# Function to fit a lasso model
 fit_one_simulation <- function(rho, replicate_id,
                                n = 200, p = 400,
                                true_variables = 1:10,
                                true_beta = rep(1, 10),
                                noise_sd = 1) {
+  # Generate the data matrix
   X <- generate_X(n = n, p = p, rho = rho, block_size = block_size)
 
+  #### 1.b Generate a continuous response vector
   beta <- numeric(p)
   beta[true_variables] <- true_beta
   y <- drop(X %*% beta + rnorm(n, mean = 0, sd = noise_sd))
 
-  # Cross-validation selects lambda using training data only.
+  # Cross-validation selects lambda using training data.
   cv_fit <- cv.glmnet(
     x = X,
     y = y,
