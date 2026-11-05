@@ -115,6 +115,7 @@ comparison_rmsep <- data.frame(
   Method = rep(c("PCR", "PLS"), each = length(pcr_components))
 )
 
+pdf('crossval.pdf')
 plot(
   pcr_components[-1], pcr_rmsep[-1],
   type = "o", pch = 16, col = "blue",
@@ -137,8 +138,10 @@ legend(
   lty = 1,
   bty = "n"
 )
+dev.off()
 
 # Observed vs predicted plot
+pdf('observedpred.pdf')
 plot(
   actual_test, pcr_pred,
   pch = 16, col = "blue",
@@ -156,12 +159,14 @@ legend(
   lty = c(NA, NA, 2),
   bty = "n"
 )
+dev.off()
 
 # 9. Test-set residuals
 pcr_residuals <- actual_test - pcr_pred
 pls_residuals <- actual_test - pls_pred
 
 par(mfrow = c(1, 2))
+pdf('pcrresiduals.pdf')
 plot(
   pcr_pred, pcr_residuals,
   pch = 16, col = "blue",
@@ -170,6 +175,8 @@ plot(
   ylab = "PCR residuals",
   main = "PCR residuals"
 )
+dev.off()
+pdf('plsresiduals.pdf')
 plot(
   pls_pred, pls_residuals,
   pch = 16, col = "red",
@@ -178,4 +185,6 @@ plot(
   ylab = "PLS residuals",
   main = "PLS residuals"
 )
+dev.off()
+
 par(mfrow = c(1, 1))
