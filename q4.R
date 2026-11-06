@@ -59,7 +59,7 @@ fit_one_simulation <- function(rho, replicate_id,
   beta[true_variables] <- true_beta
   y <- drop(X %*% beta + rnorm(n, mean = 0, sd = noise_sd))
 
-  # Cross-validation selects lambda using training data.
+  #### 1.c Cross-validation selects lambda using training data.
   cv_fit <- cv.glmnet(
     x = X,
     y = y,
@@ -70,11 +70,11 @@ fit_one_simulation <- function(rho, replicate_id,
     type.measure = "mse"
   )
 
-  # lambda.1se gives a more parsimonious model. lambda.min is retained for
-  # comparison and sensitivity analysis.
+  # lambda.1se and lambda.min are both stored for comparison
   selected_1se <- which(as.vector(coef(cv_fit, s = "lambda.1se"))[-1] != 0)
   selected_min <- which(as.vector(coef(cv_fit, s = "lambda.min"))[-1] != 0)
 
+  #### 1.d Compute performance metrics for both choices of lambda
   calculate_metrics <- function(selected) {
     tp <- sum(selected %in% true_variables)
     fp <- sum(!(selected %in% true_variables))
@@ -88,13 +88,11 @@ fit_one_simulation <- function(rho, replicate_id,
       false_positives = fp,
       false_negatives = fn,
       true_negatives = tn,
-      sensitivity = ifelse(length(true_variables) == 0, NA, tp / length(true_variables)),
-      specificity = ifelse((p - length(true_variables)) == 0, NA,
-                           tn / (p - length(true_variables))),
+      sensitivity = ifelse(tp + fn == 0, NA, tp / (tp + fn)),
+      specificity = ifelse(tn + fp == 0, NA, tn / (tn + fp)),
       precision = ifelse((tp + fp) == 0, 1, tp / (tp + fp)),
+      accuracy = ifelse(tp + fp + fn + tn == 0, NA, (tp + tn) / (tp + tn + fn + fp)),
       selected_variables = length(selected),
-      exact_support_recovery = as.integer(setequal(selected, true_variables)),
-      selected = list(selected)
     )
   }
 
@@ -106,7 +104,7 @@ fit_one_simulation <- function(rho, replicate_id,
   bind_rows(metrics_1se, metrics_min)
 }
 
-# 5. Run the simulation study
+#### 2 Run the study
 simulation_grid <- expand_grid(
   rho = correlation_values,
   replicate = seq_len(n_replicates)
@@ -126,28 +124,24 @@ results <- map2_dfr(
   )
 )
 
-# 6. Summarise performance
+# Compute performance metrics
 summary_results <- results %>%
   group_by(rho, lambda_rule) %>%
   summarise(
     mean_sensitivity = mean(sensitivity),
-    sd_sensitivity = sd(sensitivity),
     mean_specificity = mean(specificity),
-    sd_specificity = sd(specificity),
     mean_precision = mean(precision),
-    sd_precision = sd(precision),
+    mean_accuracy = mean(accuracy),
     mean_selected_variables = mean(selected_variables),
-    sd_selected_variables = sd(selected_variables),
-    exact_recovery_rate = mean(exact_support_recovery),
     .groups = "drop"
   )
 
 print(summary_results)
 
-# 7. Visualise lasso performance
+# Plot performance metrics
 plot_data <- summary_results %>%
   select(rho, lambda_rule, mean_sensitivity, mean_specificity,
-         mean_precision, mean_selected_variables) %>%
+         mean_precision, mean_accuracy, mean_selected_variables) %>%
   pivot_longer(
     cols = starts_with("mean_"),
     names_to = "metric",
@@ -170,5 +164,5 @@ performance_plot <- ggplot(plot_data, aes(x = rho, y = value,
   theme_minimal(base_size = 12)
 
 print(performance_plot)
-ggsave("q4_lasso_performance.png", performance_plot,
+ggsave("lasso_performance.pdf", performance_plot,
        width = 10, height = 7, dpi = 300)
